@@ -111,7 +111,7 @@ function setupEventListeners() {
     document.getElementById('settingTheme').addEventListener('change', handleThemeChange);
     document.getElementById('savePasswordBtn').addEventListener('click', handleSavePassword);
     document.getElementById('exportBtn').addEventListener('click', handleExport);
-    document.getElementById('importBtn').addEventListener('click', () => openModal('importModal'));
+    document.getElementById('importBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('importModal'); });
     document.getElementById('closeImportModal').addEventListener('click', () => closeModal('importModal'));
     document.getElementById('checkLinksBtn').addEventListener('click', handleCheckLinks);
     document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAll);
