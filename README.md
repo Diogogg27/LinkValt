@@ -305,7 +305,7 @@ Se este projeto te ajudou, considere apoiar o desenvolvimento:
 |------------|------|
 | ☕ **Buy Me a Coffee** | [buymeacoffee.com/Diogogg27](https://buymeacoffee.com/Diogogg27) |
 | 💰 **GitHub Sponsors** | [github.com/sponsors/Diogogg27](https://github.com/sponsors/Diogogg27) |
-| 🏦 **PIX** | `sua-chave-pix@exemplo.com` |
+| 🏦 **PIX** | `04301346147` |
 | 📱 **PayPal** | [paypal.me/Diogogg27](https://paypal.me/Diogogg27) |
 
 ### Contribuição Recorrente
