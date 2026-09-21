@@ -118,6 +118,8 @@ function setupEventListeners() {
     document.getElementById('closeImportModal').addEventListener('click', () => closeModal('importModal'));
     document.getElementById('checkLinksBtn').addEventListener('click', handleCheckLinks);
     document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAll);
+    document.getElementById('syncUpBtn').addEventListener('click', handleSyncUp);
+    document.getElementById('syncDownBtn').addEventListener('click', handleSyncDown);
 
     // Import
     document.getElementById('importJsonBtn').addEventListener('click', () => triggerImport('json'));
@@ -675,6 +677,42 @@ async function handleDeleteAll() {
     } catch (e) {
         console.error('Delete all error:', e);
         showToast('Erro ao excluir links');
+    }
+}
+
+async function handleSyncUp() {
+    const url = document.getElementById('supabaseUrl').value;
+    const key = document.getElementById('supabaseKey').value;
+    if (!url || !key) {
+        showToast('Preencha URL e Key do Supabase');
+        return;
+    }
+    showToast('Enviando para nuvem...');
+    try {
+        const count = await invoke('sync_to_cloud', { url, key });
+        showToast(`${count} links enviados para nuvem`);
+    } catch (e) {
+        console.error('Sync up error:', e);
+        showToast('Erro ao enviar: ' + e);
+    }
+}
+
+async function handleSyncDown() {
+    const url = document.getElementById('supabaseUrl').value;
+    const key = document.getElementById('supabaseKey').value;
+    if (!url || !key) {
+        showToast('Preencha URL e Key do Supabase');
+        return;
+    }
+    showToast('Baixando da nuvem...');
+    try {
+        const count = await invoke('sync_from_cloud', { url, key });
+        showToast(`${count} links baixados da nuvem`);
+        await loadLinks();
+        await loadStats();
+    } catch (e) {
+        console.error('Sync down error:', e);
+        showToast('Erro ao baixar: ' + e);
     }
 }
 

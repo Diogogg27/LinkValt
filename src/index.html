@@ -313,6 +313,24 @@
                         </div>
                     </div>
                     <div class="settings-section">
+                        <h3>Sincronização em Nuvem</h3>
+                        <div class="setting-item">
+                            <label>Supabase URL</label>
+                            <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co" style="flex:1">
+                        </div>
+                        <div class="setting-item">
+                            <label>Anon Key</label>
+                            <input type="password" id="supabaseKey" placeholder="eyJ..." style="flex:1">
+                        </div>
+                        <div class="setting-item">
+                            <label>Sincronizar</label>
+                            <div style="display:flex;gap:8px">
+                                <button class="btn-secondary" id="syncUpBtn">Enviar para Nuvem</button>
+                                <button class="btn-secondary" id="syncDownBtn">Baixar da Nuvem</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-section">
                         <h3>Sobre</h3>
                         <p class="settings-about">LinkValt v1.0.0<br>Repositório pessoal de links</p>
                     </div>

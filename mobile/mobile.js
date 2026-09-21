@@ -1,4 +1,8 @@
 // LinkVault PWA - Mobile Link Management App
+// Supabase Config
+const SUPABASE_URL = localStorage.getItem('lv_supabase_url') || '';
+const SUPABASE_KEY = localStorage.getItem('lv_supabase_key') || '';
+
 // State
 let links = [];
 let categories = [];
@@ -7,6 +11,22 @@ let currentCategory = 'all';
 let searchQuery = '';
 let editingLinkId = null;
 let selectedLinkId = null;
+
+// Supabase Client
+async function supabaseQuery(table, method = 'GET', body = null) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, opts);
+  if (!resp.ok) throw new Error(await resp.text());
+  return resp.json();
+}
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -52,8 +72,39 @@ function saveData(type, data) {
   localStorage.setItem('lv_' + type, JSON.stringify(data));
 }
 
-function loadLinks() {
-  links = loadData('links') || [];
+async function saveToSupabase(table, data) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      await supabaseQuery(table, 'POST', data);
+    } catch (e) {
+      console.error('Supabase save error:', e);
+    }
+  }
+}
+
+async function deleteFromSupabase(table, id) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      await supabaseQuery(`${table}?id=eq.${id}`, 'DELETE');
+    } catch (e) {
+      console.error('Supabase delete error:', e);
+    }
+  }
+}
+
+async function loadLinks() {
+  // Try Supabase first
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      links = await supabaseQuery('links?select=*&order=created_at.desc');
+      if (!links) links = [];
+    } catch (e) {
+      console.error('Supabase load error:', e);
+      links = loadData('links') || [];
+    }
+  } else {
+    links = loadData('links') || [];
+  }
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -174,6 +225,7 @@ function toggleFavorite(id) {
   if (link) {
     link.favorite = !link.favorite;
     saveData('links', allLinks);
+    saveToSupabase('links', link);
     loadAll();
   }
 }
@@ -182,6 +234,7 @@ function deleteLink(id) {
   if (!confirm('Delete this link?')) return;
   const allLinks = loadData('links') || [];
   saveData('links', allLinks.filter(l => l.id !== id));
+  deleteFromSupabase('links', id);
   hideSwipeActions();
   loadAll();
   showToast('Link deleted');
@@ -229,6 +282,7 @@ function saveLink() {
   }
 
   saveData('links', allLinks);
+  saveToSupabase('links', allLinks[allLinks.length - 1]);
   document.getElementById('linkModal').classList.remove('active');
   editingLinkId = null;
   loadAll();
@@ -304,6 +358,47 @@ function setPassword() {
   } else {
     localStorage.removeItem('lv_password');
     showToast('Password removed');
+  }
+}
+
+function saveSupabaseConfig() {
+  const url = document.getElementById('supabaseUrl').value.trim();
+  const key = document.getElementById('supabaseKey').value.trim();
+  if (url && key) {
+    localStorage.setItem('lv_supabase_url', url);
+    localStorage.setItem('lv_supabase_key', key);
+    showToast('Supabase configurado!');
+  } else {
+    localStorage.removeItem('lv_supabase_url');
+    localStorage.removeItem('lv_supabase_key');
+    showToast('Supabase removido');
+  }
+}
+
+async function syncNow() {
+  const url = localStorage.getItem('lv_supabase_url');
+  const key = localStorage.getItem('lv_supabase_key');
+  if (!url || !key) {
+    showToast('Configure Supabase primeiro');
+    return;
+  }
+  showToast('Sincronizando...');
+  try {
+    // Upload local links to cloud
+    const localLinks = loadData('links') || [];
+    if (localLinks.length > 0) {
+      await supabaseQuery('links', 'POST', localLinks);
+    }
+    // Download cloud links
+    const cloudLinks = await supabaseQuery('links?select=*&order=created_at.desc');
+    if (cloudLinks && cloudLinks.length > 0) {
+      saveData('links', cloudLinks);
+    }
+    loadAll();
+    showToast('Sincronizado!');
+  } catch (e) {
+    console.error('Sync error:', e);
+    showToast('Erro ao sincronizar');
   }
 }
 
@@ -401,6 +496,12 @@ function setupEventListeners() {
   document.getElementById('exportBtn').addEventListener('click', exportLinks);
   document.getElementById('importBtn').addEventListener('click', importLinks);
   document.getElementById('savePassBtn').addEventListener('click', setPassword);
+  document.getElementById('saveSupabaseBtn').addEventListener('click', saveSupabaseConfig);
+  document.getElementById('syncNowBtn').addEventListener('click', syncNow);
+  
+  // Load saved Supabase config
+  document.getElementById('supabaseUrl').value = localStorage.getItem('lv_supabase_url') || '';
+  document.getElementById('supabaseKey').value = localStorage.getItem('lv_supabase_key') || '';
   document.getElementById('closeSettingsBtn').addEventListener('click', () => {
     document.getElementById('settingsModal').classList.remove('active');
   });

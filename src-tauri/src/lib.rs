@@ -2,6 +2,7 @@ mod database;
 mod models;
 mod crypto;
 mod link_checker;
+mod supabase;
 
 use database::Database;
 use models::*;
@@ -313,6 +314,28 @@ fn save_settings(settings: serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn sync_to_cloud(url: String, key: String) -> Result<u32, String> {
+    let db = get_db();
+    let links = db.get_all_links(false).map_err(|e| e.to_string())?;
+    let client = supabase::SupabaseClient::new(&url, &key);
+    client.upsert_links(&links).await
+}
+
+#[tauri::command]
+async fn sync_from_cloud(url: String, key: String) -> Result<u32, String> {
+    let db = get_db();
+    let client = supabase::SupabaseClient::new(&url, &key);
+    let cloud_links = client.get_links().await?;
+    let mut count = 0;
+    for link in cloud_links {
+        if db.insert_link(&link).is_ok() {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -347,6 +370,8 @@ pub fn run() {
             verify_password_cmd,
             get_settings,
             save_settings,
+            sync_to_cloud,
+            sync_from_cloud,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
