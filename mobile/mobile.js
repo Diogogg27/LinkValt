@@ -1,7 +1,7 @@
 // LinkVault PWA - Mobile Link Management App
 // Supabase Config
-const SUPABASE_URL = localStorage.getItem('lv_supabase_url') || '';
-const SUPABASE_KEY = localStorage.getItem('lv_supabase_key') || '';
+let SUPABASE_URL = localStorage.getItem('lv_supabase_url') || '';
+let SUPABASE_KEY = localStorage.getItem('lv_supabase_key') || '';
 
 // State
 let links = [];
@@ -13,19 +13,6 @@ let editingLinkId = null;
 let selectedLinkId = null;
 let currentPage = 1;
 const linksPerPage = 50;
-
-// Category icons mapping
-const categoryIcons = {
-  'Desenvolvimento': 'code',
-  'Design': 'palette',
-  'Entretenimento': 'play',
-  'Social': 'users',
-  'Notícias': 'news',
-  'Aprendizado': 'book',
-  'Compras': 'shopping',
-  'Ferramentas': 'tool',
-  'Referências': 'folder'
-};
 
 // Supabase Client
 async function supabaseQuery(table, method = 'GET', body = null) {
@@ -60,12 +47,10 @@ function initApp() {
 
 function showLockScreen() {
   document.getElementById('lockScreen').classList.remove('hidden');
-  document.getElementById('lockScreen').classList.add('active');
   document.getElementById('mainApp').classList.add('hidden');
 }
 
 function showApp() {
-  document.getElementById('lockScreen').classList.remove('active');
   document.getElementById('lockScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   loadAll();
@@ -74,7 +59,6 @@ function showApp() {
 function loadAll() {
   loadCategories();
   loadLinks();
-  loadStats();
 }
 
 function loadData(type) {
@@ -86,31 +70,14 @@ function saveData(type, data) {
   localStorage.setItem('lv_' + type, JSON.stringify(data));
 }
 
-async function saveToSupabase(table, data) {
-  if (SUPABASE_URL && SUPABASE_KEY) {
-    try {
-      await supabaseQuery(table, 'POST', data);
-    } catch (e) {
-      console.error('Supabase save error:', e);
-    }
-  }
-}
-
-async function deleteFromSupabase(table, id) {
-  if (SUPABASE_URL && SUPABASE_KEY) {
-    try {
-      await supabaseQuery(`${table}?id=eq.${id}`, 'DELETE');
-    } catch (e) {
-      console.error('Supabase delete error:', e);
-    }
-  }
-}
-
 async function loadLinks() {
+  // Load from Supabase if configured
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       links = await supabaseQuery('links?select=*&order=created_at.desc');
       if (!links) links = [];
+      // Save to local for offline use
+      saveData('links', links);
     } catch (e) {
       console.error('Supabase load error:', e);
       links = loadData('links') || [];
@@ -119,9 +86,12 @@ async function loadLinks() {
     links = loadData('links') || [];
   }
 
+  // Apply filters
+  let filtered = [...links];
+
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    links = links.filter(l =>
+    filtered = filtered.filter(l =>
       l.title.toLowerCase().includes(q) ||
       l.url.toLowerCase().includes(q) ||
       (l.description && l.description.toLowerCase().includes(q))
@@ -129,77 +99,75 @@ async function loadLinks() {
   }
 
   if (currentCategory !== 'all') {
-    links = links.filter(l => l.category === currentCategory);
+    filtered = filtered.filter(l => l.category === currentCategory);
   }
 
   if (currentFilter === 'favorites') {
-    links = links.filter(l => l.favorite || l.is_favorite);
+    filtered = filtered.filter(l => l.is_favorite);
   } else if (currentFilter === 'recent') {
-    links = links.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)).slice(0, 20);
+    filtered = filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
   } else if (currentFilter === 'frequent') {
-    links = links.sort((a, b) => (b.accessCount || b.access_count || 0) - (a.accessCount || a.access_count || 0));
+    filtered = filtered.sort((a, b) => (b.access_count || 0) - (a.access_count || 0));
   } else if (currentFilter === 'broken') {
-    links = links.filter(l => l.broken || l.status === 'broken');
+    filtered = filtered.filter(l => l.status === 'broken');
   }
 
-  renderLinks();
+  // Update stats
+  updateStats();
+  
+  // Render
+  renderLinks(filtered);
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = links.length;
+  document.getElementById('statFav').textContent = links.filter(l => l.is_favorite).length;
+  document.getElementById('statBroken').textContent = links.filter(l => l.status === 'broken').length;
+  
+  const menuTotal = document.getElementById('menuTotal');
+  const menuFav = document.getElementById('menuFav');
+  const menuBroken = document.getElementById('menuBroken');
+  if (menuTotal) menuTotal.textContent = links.length;
+  if (menuFav) menuFav.textContent = links.filter(l => l.is_favorite).length;
+  if (menuBroken) menuBroken.textContent = links.filter(l => l.status === 'broken').length;
 }
 
 function loadCategories() {
-  categories = loadData('categories');
-  if (!categories || categories.length === 0) {
-    categories = [
-      { id: 'dev', name: 'Desenvolvimento', color: '#57c1ff' },
-      { id: 'design', name: 'Design', color: '#ec4899' },
-      { id: 'tools', name: 'Ferramentas', color: '#ffc533' },
-      { id: 'news', name: 'Notícias', color: '#59d499' },
-      { id: 'social', name: 'Social', color: '#3b82f6' },
-      { id: 'learning', name: 'Aprendizado', color: '#8b5cf6' },
-      { id: 'entertainment', name: 'Entretenimento', color: '#ff6161' },
-      { id: 'shopping', name: 'Compras', color: '#f59e0b' },
-      { id: 'other', name: 'Referências', color: '#6b7280' }
-    ];
-    saveData('categories', categories);
-  }
+  categories = [
+    { name: 'Desenvolvimento', color: '#57c1ff' },
+    { name: 'Design', color: '#ec4899' },
+    { name: 'Ferramentas', color: '#ffc533' },
+    { name: 'Notícias', color: '#59d499' },
+    { name: 'Social', color: '#3b82f6' },
+    { name: 'Aprendizado', color: '#8b5cf6' },
+    { name: 'Entretenimento', color: '#ff6161' },
+    { name: 'Compras', color: '#f59e0b' },
+    { name: 'Referências', color: '#6b7280' }
+  ];
   renderCategories();
   updateCategorySelect();
 }
 
-function loadStats() {
-  const allLinks = loadData('links') || [];
-  document.getElementById('statTotal').textContent = allLinks.length;
-  document.getElementById('statFav').textContent = allLinks.filter(l => l.favorite || l.is_favorite).length;
-  document.getElementById('statBroken').textContent = allLinks.filter(l => l.broken || l.status === 'broken').length;
-  
-  // Update menu badges
-  const menuTotal = document.getElementById('menuTotal');
-  const menuFav = document.getElementById('menuFav');
-  const menuBroken = document.getElementById('menuBroken');
-  if (menuTotal) menuTotal.textContent = allLinks.length;
-  if (menuFav) menuFav.textContent = allLinks.filter(l => l.favorite || l.is_favorite).length;
-  if (menuBroken) menuBroken.textContent = allLinks.filter(l => l.broken || l.status === 'broken').length;
-}
-
-function renderLinks() {
+function renderLinks(filteredLinks) {
   const container = document.getElementById('linksContainer');
   const emptyState = document.getElementById('emptyState');
   const pagination = document.getElementById('pagination');
 
-  if (links.length === 0) {
+  if (!filteredLinks || filteredLinks.length === 0) {
     container.innerHTML = '';
     emptyState.classList.remove('hidden');
-    if (pagination) pagination.innerHTML = '';
+    if (pagination) pagination.classList.add('hidden');
     return;
   }
 
   emptyState.classList.add('hidden');
 
   // Pagination
-  const totalPages = Math.ceil(links.length / linksPerPage);
+  const totalPages = Math.ceil(filteredLinks.length / linksPerPage);
   if (currentPage > totalPages) currentPage = totalPages;
   const start = (currentPage - 1) * linksPerPage;
   const end = start + linksPerPage;
-  const pageLinks = links.slice(start, end);
+  const pageLinks = filteredLinks.slice(start, end);
 
   container.innerHTML = pageLinks.map(link => createLinkCard(link)).join('');
 
@@ -217,29 +185,34 @@ function renderLinks() {
     if (currentPage < totalPages) {
       paginationHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">›</button>`;
     }
-    paginationHtml += `<span class="page-info">${links.length} links</span>`;
+    paginationHtml += `<span class="page-info">${filteredLinks.length} links</span>`;
     pagination.innerHTML = paginationHtml;
     pagination.classList.remove('hidden');
   } else if (pagination) {
-    pagination.innerHTML = `<span class="page-info">${links.length} links</span>`;
+    pagination.classList.add('hidden');
   }
 }
 
 function goToPage(page) {
   currentPage = page;
-  renderLinks();
+  loadLinks();
   document.getElementById('linksContainer').scrollTop = 0;
 }
 
 window.goToPage = goToPage;
 
 function createLinkCard(link) {
-  const domain = new URL(link.url).hostname.replace('www.', '');
+  let domain = '';
+  try {
+    domain = new URL(link.url).hostname.replace('www.', '');
+  } catch (e) {
+    domain = link.url;
+  }
   const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-  const cat = categories.find(c => c.name === link.category || c.id === link.category);
+  const cat = categories.find(c => c.name === link.category);
   const catColor = cat ? cat.color : '#6b7280';
-  const isFav = link.favorite || link.is_favorite;
-  const created = link.createdAt || link.created_at;
+  const isFav = link.is_favorite;
+  const created = link.created_at;
   const dateStr = created ? new Date(created).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
 
   return `
@@ -329,25 +302,50 @@ function openLink(id) {
   window.open(link.url, '_blank');
 }
 
-function toggleFavorite(id) {
-  const allLinks = loadData('links') || [];
-  const link = allLinks.find(l => l.id === id);
-  if (link) {
-    link.favorite = !link.favorite;
-    link.is_favorite = link.favorite;
-    saveData('links', allLinks);
-    saveToSupabase('links', link);
-    loadAll();
+async function toggleFavorite(id) {
+  const link = links.find(l => l.id === id);
+  if (!link) return;
+  
+  link.is_favorite = !link.is_favorite;
+  
+  // Update Supabase if configured
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      await supabaseQuery(`links?id=eq.${id}`, 'PATCH', { is_favorite: link.is_favorite });
+    } catch (e) {
+      console.error('Supabase update error:', e);
+    }
   }
+  
+  // Update local storage
+  const allLinks = loadData('links') || [];
+  const idx = allLinks.findIndex(l => l.id === id);
+  if (idx !== -1) {
+    allLinks[idx].is_favorite = link.is_favorite;
+    saveData('links', allLinks);
+  }
+  
+  loadLinks();
 }
 
-function deleteLink(id) {
+async function deleteLink(id) {
   if (!confirm('Excluir este link?')) return;
+  
+  // Delete from Supabase if configured
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      await supabaseQuery(`links?id=eq.${id}`, 'DELETE');
+    } catch (e) {
+      console.error('Supabase delete error:', e);
+    }
+  }
+  
+  // Delete from local storage
   const allLinks = loadData('links') || [];
   saveData('links', allLinks.filter(l => l.id !== id));
-  deleteFromSupabase('links', id);
+  
   hideSwipeActions();
-  loadAll();
+  loadLinks();
   showToast('Link excluído');
 }
 
@@ -361,10 +359,11 @@ function openLinkModal(link = null) {
   document.getElementById('linkPriority').value = link ? (link.priority || 'medium') : 'medium';
   document.getElementById('linkTags').value = link ? (link.tags || []).join(', ') : '';
   document.getElementById('linkNotes').value = link ? (link.notes || '') : '';
-  document.getElementById('linkModal').classList.add('active');
+  document.getElementById('linkModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('linkModal').classList.add('active'), 10);
 }
 
-function saveLink() {
+async function saveLink() {
   const title = document.getElementById('linkTitle').value.trim();
   const url = document.getElementById('linkUrl').value.trim();
   const description = document.getElementById('linkDescription').value.trim();
@@ -380,34 +379,56 @@ function saveLink() {
 
   try { new URL(url); } catch { showToast('URL inválida'); return; }
 
-  const allLinks = loadData('links') || [];
   const now = new Date().toISOString();
+  const favicon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
 
   if (editingLinkId) {
+    // Update existing
+    const linkData = { title, url, description, category, priority, tags, notes, favicon, updated_at: now };
+    
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        await supabaseQuery(`links?id=eq.${editingLinkId}`, 'PATCH', linkData);
+      } catch (e) {
+        console.error('Supabase update error:', e);
+      }
+    }
+    
+    const allLinks = loadData('links') || [];
     const idx = allLinks.findIndex(l => l.id === editingLinkId);
     if (idx !== -1) {
-      allLinks[idx] = { ...allLinks[idx], title, url, description, category, priority, tags, notes, updated_at: now };
+      allLinks[idx] = { ...allLinks[idx], ...linkData };
+      saveData('links', allLinks);
     }
+    
+    showToast('Link atualizado');
   } else {
-    allLinks.push({
-      id: 'link_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-      title, url, description, category, priority, tags, notes,
-      favorite: false, is_favorite: false, broken: false, status: 'active',
-      accessCount: 0, access_count: 0, createdAt: now, created_at: now, lastAccessed: null, last_accessed: null
-    });
+    // Create new
+    const id = 'link_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const linkData = {
+      id, title, url, description, category, priority, tags, notes, favicon,
+      is_favorite: false, status: 'active',
+      access_count: 0, created_at: now, updated_at: now
+    };
+    
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        await supabaseQuery('links', 'POST', linkData);
+      } catch (e) {
+        console.error('Supabase insert error:', e);
+      }
+    }
+    
+    const allLinks = loadData('links') || [];
+    allLinks.push(linkData);
+    saveData('links', allLinks);
+    
+    showToast('Link adicionado');
   }
 
-  saveData('links', allLinks);
-  saveToSupabase('links', allLinks[allLinks.length - 1]);
   document.getElementById('linkModal').classList.remove('active');
   editingLinkId = null;
-  loadAll();
-  showToast(editingLinkId ? 'Link atualizado' : 'Link adicionado');
-}
-
-function showSwipeActions(id) {
-  selectedLinkId = id;
-  document.getElementById('swipeActions').classList.add('active');
+  loadLinks();
 }
 
 function hideSwipeActions() {
@@ -417,8 +438,8 @@ function hideSwipeActions() {
 
 function exportLinks() {
   const data = {
-    links: loadData('links') || [],
-    categories: loadData('categories') || [],
+    links: links,
+    categories: categories,
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -438,18 +459,23 @@ function importLinks() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const data = JSON.parse(ev.target.result);
-        if (data.links) {
+        if (data.links && data.links.length > 0) {
+          // Import to Supabase if configured
+          if (SUPABASE_URL && SUPABASE_KEY) {
+            try {
+              await supabaseQuery('links', 'POST', data.links);
+            } catch (e) {
+              console.error('Supabase import error:', e);
+            }
+          }
+          
+          // Import to local
           const existing = loadData('links') || [];
           const merged = [...existing, ...data.links.filter(l => !existing.find(e => e.url === l.url))];
           saveData('links', merged);
-        }
-        if (data.categories) {
-          const existing = loadData('categories') || [];
-          const merged = [...existing, ...data.categories.filter(c => !existing.find(e => e.id === c.id))];
-          saveData('categories', merged);
         }
         loadAll();
         showToast('Links importados com sucesso');
@@ -477,27 +503,32 @@ function saveSupabaseConfig() {
   if (url && key) {
     localStorage.setItem('lv_supabase_url', url);
     localStorage.setItem('lv_supabase_key', key);
+    SUPABASE_URL = url;
+    SUPABASE_KEY = key;
     showToast('Supabase configurado!');
+    loadAll();
   } else {
     localStorage.removeItem('lv_supabase_url');
     localStorage.removeItem('lv_supabase_key');
+    SUPABASE_URL = '';
+    SUPABASE_KEY = '';
     showToast('Supabase removido');
   }
 }
 
 async function syncNow() {
-  const url = localStorage.getItem('lv_supabase_url');
-  const key = localStorage.getItem('lv_supabase_key');
-  if (!url || !key) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
     showToast('Configure Supabase primeiro');
     return;
   }
   showToast('Sincronizando...');
   try {
+    // Upload local links to cloud
     const localLinks = loadData('links') || [];
     if (localLinks.length > 0) {
       await supabaseQuery('links', 'POST', localLinks);
     }
+    // Download cloud links
     const cloudLinks = await supabaseQuery('links?select=*&order=created_at.desc');
     if (cloudLinks && cloudLinks.length > 0) {
       saveData('links', cloudLinks);
@@ -550,7 +581,7 @@ function setFilter(filter) {
   document.querySelectorAll('.filter-pill').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === filter);
   });
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     item.classList.toggle('active', item.dataset.view === filter);
   });
   loadLinks();
@@ -604,16 +635,20 @@ function setupEventListeners() {
   // Add link
   document.getElementById('addLinkBtn').addEventListener('click', () => openLinkModal());
 
-  // Modal
-  document.getElementById('saveLinkBtn').addEventListener('click', saveLink);
+  // Modal close
   document.getElementById('closeLinkModal').addEventListener('click', () => {
     document.getElementById('linkModal').classList.remove('active');
+    setTimeout(() => document.getElementById('linkModal').classList.add('hidden'), 200);
     editingLinkId = null;
   });
+
+  // Save link
+  document.getElementById('saveLinkBtn').addEventListener('click', saveLink);
 
   // Settings
   document.getElementById('closeSettingsModal').addEventListener('click', () => {
     document.getElementById('settingsModal').classList.remove('active');
+    setTimeout(() => document.getElementById('settingsModal').classList.add('hidden'), 200);
   });
   document.getElementById('exportBtn').addEventListener('click', exportLinks);
   document.getElementById('importBtn').addEventListener('click', importLinks);
@@ -625,8 +660,8 @@ function setupEventListeners() {
   });
 
   // Load saved Supabase config
-  document.getElementById('supabaseUrl').value = localStorage.getItem('lv_supabase_url') || '';
-  document.getElementById('supabaseKey').value = localStorage.getItem('lv_supabase_key') || '';
+  document.getElementById('supabaseUrl').value = SUPABASE_URL;
+  document.getElementById('supabaseKey').value = SUPABASE_KEY;
 
   // Theme toggle
   document.getElementById('themeToggle').addEventListener('change', (e) => {
@@ -648,7 +683,7 @@ function setupEventListeners() {
     });
   });
 
-  // Link card clicks
+  // Link card clicks (event delegation)
   document.getElementById('linksContainer').addEventListener('click', (e) => {
     const card = e.target.closest('.link-card');
     if (!card) return;
