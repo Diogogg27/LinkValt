@@ -454,7 +454,6 @@ function sortLinks(links, sortBy) {
 async function openLink(link) {
     try {
         await invoke('open_link', { id: link.id });
-        await window.__TAURI__.shell.open(link.url);
     } catch (e) {
         console.error('Open link error:', e);
     }

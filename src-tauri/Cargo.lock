@@ -1973,6 +1973,7 @@ dependencies = [
  "aes-gcm",
  "base64 0.22.1",
  "chrono",
+ "open",
  "rand 0.8.8",
  "regex-lite",
  "reqwest 0.12.28",

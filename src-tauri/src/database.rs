@@ -257,6 +257,35 @@ impl Database {
         Ok(count)
     }
 
+    pub fn get_link_by_id(&self, id: &str) -> Result<Link> {
+        let conn = self.conn.lock().unwrap();
+        let link = conn.query_row(
+            "SELECT * FROM links WHERE id = ?1", params![id], |row| {
+                let tags_json: String = row.get(7)?;
+                let tags: Vec<String> = serde_json::from_str(&tags_json).unwrap_or_default();
+                Ok(Link {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    url: row.get(2)?,
+                    description: row.get(3)?,
+                    favicon: row.get(4)?,
+                    category: row.get(5)?,
+                    tags,
+                    status: row.get(6)?,
+                    priority: row.get(8)?,
+                    notes: row.get(9)?,
+                    is_favorite: row.get::<_, i32>(10)? == 1,
+                    is_archived: row.get::<_, i32>(11)? == 1,
+                    access_count: row.get(12)?,
+                    last_accessed: row.get(13)?,
+                    created_at: row.get(14)?,
+                    updated_at: row.get(15)?,
+                })
+            }
+        )?;
+        Ok(link)
+    }
+
     pub fn toggle_favorite(&self, id: &str) -> Result<bool> {
         let conn = self.conn.lock().unwrap();
         let current: i32 = conn.query_row(

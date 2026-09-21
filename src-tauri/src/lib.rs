@@ -120,6 +120,8 @@ fn archive_link(id: String, archived: bool) -> Result<(), String> {
 #[tauri::command]
 fn open_link(id: String) -> Result<(), String> {
     let db = get_db();
+    let link = db.get_link_by_id(&id).map_err(|e| e.to_string())?;
+    open::that(&link.url).map_err(|e| e.to_string())?;
     db.increment_access(&id).map_err(|e| e.to_string())?;
     Ok(())
 }
