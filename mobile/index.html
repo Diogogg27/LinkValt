@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f0f12">
+    <meta name="theme-color" content="#07080a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>LinkValt</title>
@@ -12,11 +12,41 @@
     <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
+    <!-- SVG Sprite -->
+    <svg style="display:none">
+        <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+        <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+        <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+        <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+        <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+        <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+        <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></symbol>
+    </svg>
+
     <div id="app">
         <!-- Lock Screen -->
         <div id="lockScreen" class="lock-screen hidden">
             <div class="lock-card">
-                <div class="lock-icon">🔒</div>
+                <div class="lock-icon">
+                    <svg width="24" height="24"><use href="#i-shield"/></svg>
+                </div>
                 <h1>LinkValt</h1>
                 <p>Insira sua senha</p>
                 <input type="password" id="lockPassword" placeholder="Senha" autocomplete="off">
@@ -29,197 +59,230 @@
         <div id="mainApp" class="app-container hidden">
             <!-- Header -->
             <header class="header">
-                <button class="btn-icon" id="menuBtn">☰</button>
-                <h1 class="logo">🔗 LinkVault</h1>
-                <button class="btn-icon" id="addLinkBtn">+</button>
+                <button class="btn-icon" id="menuBtn">
+                    <svg width="20" height="20"><use href="#i-menu"/></svg>
+                </button>
+                <div class="logo">
+                    <svg width="24" height="24"><use href="#i-link"/></svg>
+                    <span class="logo-text">LinkValt</span>
+                </div>
+                <button class="btn-icon" id="addLinkBtn">
+                    <svg width="20" height="20"><use href="#i-plus"/></svg>
+                </button>
             </header>
 
             <!-- Search -->
             <div class="search-bar">
-                <span class="search-icon">🔍</span>
+                <svg width="16" height="16"><use href="#i-search"/></svg>
                 <input type="text" id="searchInput" placeholder="Buscar links...">
             </div>
 
             <!-- Stats -->
             <div class="stats-row">
                 <div class="stat-pill"><span id="statTotal">0</span> Total</div>
-                <div class="stat-pill fav"><span id="statFav">0</span> ⭐</div>
-                <div class="stat-pill warn"><span id="statBroken">0</span> ⚠️</div>
+                <div class="stat-pill fav"><span id="statFav">0</span> Favoritos</div>
+                <div class="stat-pill warn"><span id="statBroken">0</span> Quebrados</div>
             </div>
 
             <!-- Quick Filters -->
-            <div class="filter-row">
-                <button class="filter-btn active" data-filter="all">Todos</button>
-                <button class="filter-btn" data-filter="favorites">⭐ Favoritos</button>
-                <button class="filter-btn" data-filter="recent">🕐 Recentes</button>
-                <button class="filter-btn" data-filter="broken">⚠️ Problemas</button>
+            <div class="quick-filters">
+                <button class="filter-pill active" data-filter="all">Todos</button>
+                <button class="filter-pill" data-filter="favorites">
+                    <svg width="12" height="12"><use href="#i-star"/></svg> Favoritos
+                </button>
+                <button class="filter-pill" data-filter="recent">
+                    <svg width="12" height="12"><use href="#i-clock"/></svg> Recentes
+                </button>
+                <button class="filter-pill" data-filter="broken">
+                    <svg width="12" height="12"><use href="#i-alert-triangle"/></svg> Quebrados
+                </button>
             </div>
 
-            <!-- Categories -->
-            <div class="categories-scroll" id="categoriesScroll"></div>
+            <!-- Categories Horizontal -->
+            <div class="categories-scroll" id="categoriesScroll">
+                <!-- Populated by JS -->
+            </div>
 
-            <!-- Links List -->
-            <div class="links-list" id="linksList"></div>
+            <!-- Links -->
+            <div class="links-scroll" id="linksContainer">
+                <!-- Populated by JS -->
+            </div>
 
             <!-- Empty State -->
             <div class="empty-state hidden" id="emptyState">
-                <div class="empty-icon">🔗</div>
+                <svg width="48" height="48"><use href="#i-link"/></svg>
                 <h2>Nenhum link encontrado</h2>
-                <p>Toque em + para adicionar</p>
+                <p>Adicione seus primeiros links clicando no +</p>
             </div>
-        </div>
 
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav" id="bottomNav">
-            <button class="nav-btn active" data-view="all">
-                <span class="nav-icon">📋</span>
-                <span>Todos</span>
-            </button>
-            <button class="nav-btn" data-view="favorites">
-                <span class="nav-icon">⭐</span>
-                <span>Favoritos</span>
-            </button>
-            <button class="nav-btn" data-view="add">
-                <span class="nav-icon add-icon">+</span>
-            </button>
-            <button class="nav-btn" data-view="categories">
-                <span class="nav-icon">📁</span>
-                <span>Categorias</span>
-            </button>
-            <button class="nav-btn" data-view="settings">
-                <span class="nav-icon">⚙️</span>
-                <span>Config</span>
-            </button>
-        </nav>
+            <!-- Pagination -->
+            <div class="pagination hidden" id="pagination"></div>
+        </div>
 
         <!-- Side Menu -->
         <div class="side-menu hidden" id="sideMenu">
-            <div class="side-menu-backdrop" id="closeMenu"></div>
-            <div class="side-menu-content">
+            <div class="menu-panel">
                 <div class="menu-header">
-                    <h2>🔗 LinkVault</h2>
-                    <button class="btn-icon" id="closeMenuBtn">×</button>
+                    <h2>LinkValt</h2>
+                    <button class="btn-icon" id="closeMenuBtn">
+                        <svg width="20" height="20"><use href="#i-x"/></svg>
+                    </button>
                 </div>
-                <div class="menu-items">
-                    <button class="menu-item" data-action="all">
-                        <span>📋</span> Todos os Links
+                <div class="menu-nav">
+                    <button class="nav-item active" data-view="all">
+                        <svg width="16" height="16"><use href="#i-home"/></svg>
+                        Todos
+                        <span class="nav-badge" id="menuTotal">0</span>
                     </button>
-                    <button class="menu-item" data-action="favorites">
-                        <span>⭐</span> Favoritos
+                    <button class="nav-item" data-view="favorites">
+                        <svg width="16" height="16"><use href="#i-star"/></svg>
+                        Favoritos
+                        <span class="nav-badge" id="menuFav">0</span>
                     </button>
-                    <button class="menu-item" data-action="recent">
-                        <span>🕐</span> Recentes
+                    <button class="nav-item" data-view="recent">
+                        <svg width="16" height="16"><use href="#i-clock"/></svg>
+                        Recentes
                     </button>
-                    <button class="menu-item" data-action="frequent">
-                        <span>📊</span> Mais Acessados
+                    <button class="nav-item" data-view="broken">
+                        <svg width="16" height="16"><use href="#i-alert-triangle"/></svg>
+                        Quebrados
+                        <span class="nav-badge warning" id="menuBroken">0</span>
                     </button>
-                    <button class="menu-item" data-action="broken">
-                        <span>⚠️</span> Com Problemas
+                    <button class="nav-item" data-view="archived">
+                        <svg width="16" height="16"><use href="#i-archive"/></svg>
+                        Arquivados
                     </button>
-                    <hr>
-                    <button class="menu-item" data-action="settings">
-                        <span>⚙️</span> Configurações
+                    <div class="nav-divider"></div>
+                    <div id="menuCategories">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="nav-divider"></div>
+                    <button class="nav-item" data-view="settings">
+                        <svg width="16" height="16"><use href="#i-settings"/></svg>
+                        Configurações
                     </button>
+                </div>
+                <div class="menu-footer">
+                    <p>LinkValt v1.0.0</p>
                 </div>
             </div>
         </div>
 
-        <!-- Add/Edit Modal -->
+        <!-- Add/Edit Link Modal -->
         <div class="modal hidden" id="linkModal">
-            <div class="modal-header">
-                <button class="btn-icon" id="closeModalBtn">×</button>
-                <h2 id="modalTitle">Novo Link</h2>
-                <button class="btn-primary btn-save" id="saveLinkBtn">Salvar</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="linkId">
-                <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="linkTitle" placeholder="Nome do link">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Adicionar Link</h2>
+                    <button class="btn-icon" id="closeLinkModal">
+                        <svg width="20" height="20"><use href="#i-x"/></svg>
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label>URL *</label>
-                    <input type="url" id="linkUrl" placeholder="https://exemplo.com">
-                </div>
-                <div class="form-group">
-                    <label>Descrição</label>
-                    <textarea id="linkDesc" rows="2" placeholder="Breve descrição"></textarea>
-                </div>
-                <div class="form-row">
+                <div class="modal-body">
+                    <input type="hidden" id="linkId">
                     <div class="form-group">
-                        <label>Categoria</label>
-                        <select id="linkCategory"></select>
+                        <label>Título</label>
+                        <input type="text" id="linkTitle" placeholder="Nome do link">
                     </div>
                     <div class="form-group">
-                        <label>Prioridade</label>
-                        <select id="linkPriority">
-                            <option value="low">🟢 Baixa</option>
-                            <option value="medium" selected>🟡 Média</option>
-                            <option value="high">🔴 Alta</option>
-                        </select>
+                        <label>URL</label>
+                        <input type="url" id="linkUrl" placeholder="https://exemplo.com">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Tags (separadas por vírgula)</label>
-                    <input type="text" id="linkTags" placeholder="tag1, tag2">
-                </div>
-                <div class="form-group">
-                    <label>Notas</label>
-                    <textarea id="linkNotes" rows="2" placeholder="Notas..."></textarea>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <textarea id="linkDescription" placeholder="Breve descrição (opcional)"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <select id="linkCategory"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Prioridade</label>
+                            <select id="linkPriority">
+                                <option value="low">Baixa</option>
+                                <option value="medium" selected>Média</option>
+                                <option value="high">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (separadas por vírgula)</label>
+                        <input type="text" id="linkTags" placeholder="tag1, tag2, tag3">
+                    </div>
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="linkNotes" placeholder="Notas adicionais (opcional)"></textarea>
+                    </div>
+                    <button class="btn-primary" id="saveLinkBtn">Salvar Link</button>
                 </div>
             </div>
         </div>
 
         <!-- Settings Modal -->
         <div class="modal hidden" id="settingsModal">
-            <div class="modal-header">
-                <button class="btn-icon" id="closeSettingsBtn">×</button>
-                <h2>Configurações</h2>
-                <div></div>
-            </div>
-            <div class="modal-body">
-                <div class="settings-section">
-                    <h3>Aparência</h3>
-                    <div class="setting-row">
-                        <span>Tema Escuro</span>
-                        <label class="toggle">
-                            <input type="checkbox" id="themeToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Configurações</h2>
+                    <button class="btn-icon" id="closeSettingsModal">
+                        <svg width="20" height="20"><use href="#i-x"/></svg>
+                    </button>
                 </div>
-                <div class="settings-section">
-                    <h3>Dados</h3>
-                    <button class="btn-secondary full-width" id="exportBtn">📥 Exportar Links</button>
-                    <button class="btn-secondary full-width" id="importBtn">📤 Importar Links</button>
-                    <button class="btn-secondary full-width" id="checkLinksBtn">🔍 Verificar Links</button>
-                </div>
-                <div class="settings-section">
-                    <h3>Segurança</h3>
-                    <div class="form-group">
-                        <label>Definir Senha</label>
-                        <div class="form-row">
-                            <input type="password" id="newPassword" placeholder="Nova senha">
-                            <button class="btn-primary" id="savePassBtn">Salvar</button>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h3>Aparência</h3>
+                        <div class="setting-row">
+                            <span>Tema Escuro</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="themeToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
                         </div>
                     </div>
-                </div>
-                <div class="settings-section">
-                    <h3>Sincronização em Nuvem</h3>
-                    <div class="form-group">
-                        <label>Supabase URL</label>
-                        <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                    <div class="settings-section">
+                        <h3>Dados</h3>
+                        <button class="btn-secondary" id="exportBtn">
+                            <svg width="16" height="16" style="margin-right:8px"><use href="#i-download"/></svg>
+                            Exportar Links
+                        </button>
+                        <button class="btn-secondary" id="importBtn" style="margin-top:8px">
+                            <svg width="16" height="16" style="margin-right:8px"><use href="#i-upload"/></svg>
+                            Importar Links
+                        </button>
+                        <button class="btn-secondary" id="checkLinksBtn" style="margin-top:8px">
+                            <svg width="16" height="16" style="margin-right:8px"><use href="#i-refresh"/></svg>
+                            Verificar Links
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Anon Key</label>
-                        <input type="password" id="supabaseKey" placeholder="eyJ...">
+                    <div class="settings-section">
+                        <h3>Segurança</h3>
+                        <div class="form-group">
+                            <label>Definir Senha</label>
+                            <div class="form-row">
+                                <input type="password" id="newPassword" placeholder="Nova senha">
+                                <button class="btn-primary" id="savePassBtn">Salvar</button>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn-primary full-width" id="saveSupabaseBtn">Salvar Configurações</button>
-                    <button class="btn-secondary full-width" id="syncNowBtn" style="margin-top:8px">🔄 Sincronizar Agora</button>
-                </div>
-                <div class="settings-section">
-                    <h3>Sobre</h3>
-                    <p class="about-text">LinkVault v1.0.0<br>Repositório pessoal de links</p>
+                    <div class="settings-section">
+                        <h3>Sincronização em Nuvem</h3>
+                        <div class="form-group">
+                            <label>Supabase URL</label>
+                            <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                        </div>
+                        <div class="form-group">
+                            <label>Anon Key</label>
+                            <input type="password" id="supabaseKey" placeholder="eyJ...">
+                        </div>
+                        <button class="btn-primary" id="saveSupabaseBtn">Salvar Configurações</button>
+                        <button class="btn-secondary" id="syncNowBtn" style="margin-top:8px">
+                            <svg width="16" height="16" style="margin-right:8px"><use href="#i-refresh"/></svg>
+                            Sincronizar Agora
+                        </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Sobre</h3>
+                        <p class="about-text">LinkValt v1.0.0<br>Repositório pessoal de links</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -231,10 +294,21 @@
 
         <!-- Swipe Action -->
         <div class="swipe-actions hidden" id="swipeActions">
-            <button class="swipe-btn fav" data-action="favorite">⭐</button>
-            <button class="swipe-btn edit" data-action="edit">✏️</button>
-            <button class="swipe-btn delete" data-action="delete">🗑️</button>
+            <button class="swipe-btn fav" data-action="favorite">
+                <svg width="16" height="16"><use href="#i-star"/></svg> Favoritar
+            </button>
+            <button class="swipe-btn edit" data-action="edit">
+                <svg width="16" height="16"><use href="#i-edit"/></svg> Editar
+            </button>
+            <button class="swipe-btn delete" data-action="delete">
+                <svg width="16" height="16"><use href="#i-trash"/></svg> Excluir
+            </button>
         </div>
+
+        <!-- FAB -->
+        <button class="fab hidden" id="fabAdd">
+            <svg width="24" height="24"><use href="#i-plus"/></svg>
+        </button>
     </div>
 
     <script src="mobile.js"></script>

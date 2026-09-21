@@ -11,6 +11,21 @@ let currentCategory = 'all';
 let searchQuery = '';
 let editingLinkId = null;
 let selectedLinkId = null;
+let currentPage = 1;
+const linksPerPage = 50;
+
+// Category icons mapping
+const categoryIcons = {
+  'Desenvolvimento': 'code',
+  'Design': 'palette',
+  'Entretenimento': 'play',
+  'Social': 'users',
+  'Notícias': 'news',
+  'Aprendizado': 'book',
+  'Compras': 'shopping',
+  'Ferramentas': 'tool',
+  'Referências': 'folder'
+};
 
 // Supabase Client
 async function supabaseQuery(table, method = 'GET', body = null) {
@@ -35,9 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-  const theme = localStorage.getItem('lv_theme');
-  if (theme === 'dark') document.body.classList.add('dark');
-
   const password = localStorage.getItem('lv_password');
   if (password) {
     showLockScreen();
@@ -49,14 +61,13 @@ function initApp() {
 function showLockScreen() {
   document.getElementById('lockScreen').classList.remove('hidden');
   document.getElementById('lockScreen').classList.add('active');
-  document.getElementById('app').style.display = '';
   document.getElementById('mainApp').classList.add('hidden');
 }
 
 function showApp() {
   document.getElementById('lockScreen').classList.remove('active');
+  document.getElementById('lockScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('app').style.display = '';
   loadAll();
 }
 
@@ -96,7 +107,6 @@ async function deleteFromSupabase(table, id) {
 }
 
 async function loadLinks() {
-  // Try Supabase first
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       links = await supabaseQuery('links?select=*&order=created_at.desc');
@@ -123,13 +133,13 @@ async function loadLinks() {
   }
 
   if (currentFilter === 'favorites') {
-    links = links.filter(l => l.favorite);
+    links = links.filter(l => l.favorite || l.is_favorite);
   } else if (currentFilter === 'recent') {
-    links = links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 20);
+    links = links.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)).slice(0, 20);
   } else if (currentFilter === 'frequent') {
-    links = links.sort((a, b) => (b.accessCount || 0) - (a.accessCount || 0));
+    links = links.sort((a, b) => (b.accessCount || b.access_count || 0) - (a.accessCount || a.access_count || 0));
   } else if (currentFilter === 'broken') {
-    links = links.filter(l => l.broken);
+    links = links.filter(l => l.broken || l.status === 'broken');
   }
 
   renderLinks();
@@ -139,13 +149,15 @@ function loadCategories() {
   categories = loadData('categories');
   if (!categories || categories.length === 0) {
     categories = [
-      { id: 'dev', name: 'Development', icon: '💻', color: '#6366f1' },
-      { id: 'design', name: 'Design', icon: '🎨', color: '#ec4899' },
-      { id: 'tools', name: 'Tools', icon: '🔧', color: '#f59e0b' },
-      { id: 'news', name: 'News', icon: '📰', color: '#10b981' },
-      { id: 'social', name: 'Social', icon: '🌐', color: '#3b82f6' },
-      { id: 'learning', name: 'Learning', icon: '📚', color: '#8b5cf6' },
-      { id: 'other', name: 'Other', icon: '📁', color: '#6b7280' }
+      { id: 'dev', name: 'Desenvolvimento', color: '#57c1ff' },
+      { id: 'design', name: 'Design', color: '#ec4899' },
+      { id: 'tools', name: 'Ferramentas', color: '#ffc533' },
+      { id: 'news', name: 'Notícias', color: '#59d499' },
+      { id: 'social', name: 'Social', color: '#3b82f6' },
+      { id: 'learning', name: 'Aprendizado', color: '#8b5cf6' },
+      { id: 'entertainment', name: 'Entretenimento', color: '#ff6161' },
+      { id: 'shopping', name: 'Compras', color: '#f59e0b' },
+      { id: 'other', name: 'Referências', color: '#6b7280' }
     ];
     saveData('categories', categories);
   }
@@ -156,69 +168,164 @@ function loadCategories() {
 function loadStats() {
   const allLinks = loadData('links') || [];
   document.getElementById('statTotal').textContent = allLinks.length;
-  document.getElementById('statFav').textContent = allLinks.filter(l => l.favorite).length;
-  document.getElementById('statBroken').textContent = allLinks.filter(l => l.broken).length;
+  document.getElementById('statFav').textContent = allLinks.filter(l => l.favorite || l.is_favorite).length;
+  document.getElementById('statBroken').textContent = allLinks.filter(l => l.broken || l.status === 'broken').length;
+  
+  // Update menu badges
+  const menuTotal = document.getElementById('menuTotal');
+  const menuFav = document.getElementById('menuFav');
+  const menuBroken = document.getElementById('menuBroken');
+  if (menuTotal) menuTotal.textContent = allLinks.length;
+  if (menuFav) menuFav.textContent = allLinks.filter(l => l.favorite || l.is_favorite).length;
+  if (menuBroken) menuBroken.textContent = allLinks.filter(l => l.broken || l.status === 'broken').length;
 }
 
 function renderLinks() {
-  const container = document.getElementById('linksList');
+  const container = document.getElementById('linksContainer');
+  const emptyState = document.getElementById('emptyState');
+  const pagination = document.getElementById('pagination');
+
   if (links.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔗</div><h3>No links found</h3><p>Add your first link to get started!</p></div>';
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    if (pagination) pagination.innerHTML = '';
     return;
   }
-  container.innerHTML = links.map(link => createLinkHTML(link)).join('');
+
+  emptyState.classList.add('hidden');
+
+  // Pagination
+  const totalPages = Math.ceil(links.length / linksPerPage);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * linksPerPage;
+  const end = start + linksPerPage;
+  const pageLinks = links.slice(start, end);
+
+  container.innerHTML = pageLinks.map(link => createLinkCard(link)).join('');
+
+  // Render pagination
+  if (pagination && totalPages > 1) {
+    let paginationHtml = '';
+    if (currentPage > 1) {
+      paginationHtml += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">‹</button>`;
+    }
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    for (let i = startPage; i <= endPage; i++) {
+      paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    if (currentPage < totalPages) {
+      paginationHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">›</button>`;
+    }
+    paginationHtml += `<span class="page-info">${links.length} links</span>`;
+    pagination.innerHTML = paginationHtml;
+    pagination.classList.remove('hidden');
+  } else if (pagination) {
+    pagination.innerHTML = `<span class="page-info">${links.length} links</span>`;
+  }
 }
 
-function createLinkHTML(link) {
+function goToPage(page) {
+  currentPage = page;
+  renderLinks();
+  document.getElementById('linksContainer').scrollTop = 0;
+}
+
+window.goToPage = goToPage;
+
+function createLinkCard(link) {
   const domain = new URL(link.url).hostname.replace('www.', '');
   const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-  const cat = categories.find(c => c.id === link.category);
-  const catLabel = cat ? `<span class="link-cat" style="background:${cat.color}20;color:${cat.color}">${cat.icon} ${cat.name}</span>` : '';
+  const cat = categories.find(c => c.name === link.category || c.id === link.category);
+  const catColor = cat ? cat.color : '#6b7280';
+  const isFav = link.favorite || link.is_favorite;
+  const created = link.createdAt || link.created_at;
+  const dateStr = created ? new Date(created).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
 
   return `
-    <div class="link-item" data-id="${link.id}" onclick="openLink('${link.id}')">
-      <div class="link-content">
-        <img class="link-favicon" src="${favicon}" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🔗</text></svg>'">
+    <div class="link-card" data-id="${link.id}">
+      <div class="link-card-header">
+        <div class="link-favicon">
+          <img src="${favicon}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <svg style="display:none" width="16" height="16"><use href="#i-link"/></svg>
+        </div>
         <div class="link-info">
           <div class="link-title">${esc(link.title)}</div>
-          <div class="link-domain">${esc(domain)}</div>
-          ${catLabel}
+          <div class="link-url">${esc(domain)}</div>
         </div>
-      </div>
-      <div class="link-actions">
-        <button class="link-action-btn fav-btn ${link.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${link.id}')">
-          ${link.favorite ? '★' : '☆'}
+        <button class="link-action-btn favorite ${isFav ? 'active' : ''}" data-id="${link.id}">
+          <svg width="14" height="14"><use href="#i-star"/></svg>
         </button>
-        <button class="link-action-btn" onclick="event.stopPropagation();showSwipeActions('${link.id}')">⋮</button>
+      </div>
+      ${link.description ? `<div class="link-description">${esc(link.description)}</div>` : ''}
+      <div class="link-meta">
+        <span class="link-category">
+          <span class="cat-dot" style="background:${catColor}"></span>
+          ${esc(link.category || 'Referências')}
+        </span>
+        ${dateStr ? `<span class="link-date">${dateStr}</span>` : ''}
       </div>
     </div>
   `;
 }
 
 function renderCategories() {
-  const container = document.getElementById('categoryChips');
-  let html = `<button class="cat-chip active" data-cat="all" onclick="filterCategory('all')">All</button>`;
+  const container = document.getElementById('categoriesScroll');
+  const menuContainer = document.getElementById('menuCategories');
+  
+  let html = `<button class="cat-pill active" data-cat="all">Todos</button>`;
+  let menuHtml = '';
+  
   categories.forEach(cat => {
-    html += `<button class="cat-chip" data-cat="${cat.id}" onclick="filterCategory('${cat.id}')">${cat.icon} ${cat.name}</button>`;
+    html += `<button class="cat-pill" data-cat="${cat.name}">
+      <span class="cat-dot" style="background:${cat.color}"></span>
+      ${esc(cat.name)}
+    </button>`;
+    menuHtml += `
+      <button class="nav-item category-nav-item" data-cat="${cat.name}">
+        <span class="cat-dot" style="background:${cat.color};width:8px;height:8px;border-radius:50%"></span>
+        ${esc(cat.name)}
+      </button>
+    `;
   });
+  
   container.innerHTML = html;
+  if (menuContainer) menuContainer.innerHTML = menuHtml;
+  
+  // Add click handlers
+  container.querySelectorAll('.cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      currentCategory = pill.dataset.cat;
+      currentPage = 1;
+      container.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      loadLinks();
+    });
+  });
+  
+  if (menuContainer) {
+    menuContainer.querySelectorAll('.category-nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        currentCategory = item.dataset.cat;
+        currentPage = 1;
+        closeMenu();
+        loadLinks();
+      });
+    });
+  }
 }
 
 function updateCategorySelect() {
   const select = document.getElementById('linkCategory');
-  select.innerHTML = '<option value="">No category</option>';
+  select.innerHTML = '<option value="">Selecionar categoria</option>';
   categories.forEach(cat => {
-    select.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+    select.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
   });
 }
 
 function openLink(id) {
   const link = links.find(l => l.id === id);
   if (!link) return;
-
-  link.accessCount = (link.accessCount || 0) + 1;
-  link.lastAccessed = new Date().toISOString();
-  saveData('links', loadData('links').map(l => l.id === id ? link : l));
   window.open(link.url, '_blank');
 }
 
@@ -227,6 +334,7 @@ function toggleFavorite(id) {
   const link = allLinks.find(l => l.id === id);
   if (link) {
     link.favorite = !link.favorite;
+    link.is_favorite = link.favorite;
     saveData('links', allLinks);
     saveToSupabase('links', link);
     loadAll();
@@ -234,23 +342,25 @@ function toggleFavorite(id) {
 }
 
 function deleteLink(id) {
-  if (!confirm('Delete this link?')) return;
+  if (!confirm('Excluir este link?')) return;
   const allLinks = loadData('links') || [];
   saveData('links', allLinks.filter(l => l.id !== id));
   deleteFromSupabase('links', id);
   hideSwipeActions();
   loadAll();
-  showToast('Link deleted');
+  showToast('Link excluído');
 }
 
 function openLinkModal(link = null) {
   editingLinkId = link ? link.id : null;
-  document.getElementById('modalTitle').textContent = link ? 'Edit Link' : 'Add Link';
+  document.getElementById('modalTitle').textContent = link ? 'Editar Link' : 'Adicionar Link';
   document.getElementById('linkTitle').value = link ? link.title : '';
   document.getElementById('linkUrl').value = link ? link.url : '';
   document.getElementById('linkDescription').value = link ? (link.description || '') : '';
   document.getElementById('linkCategory').value = link ? (link.category || '') : '';
-  document.getElementById('linkTags').value = link ? (link.tags || '').join(', ') : '';
+  document.getElementById('linkPriority').value = link ? (link.priority || 'medium') : 'medium';
+  document.getElementById('linkTags').value = link ? (link.tags || []).join(', ') : '';
+  document.getElementById('linkNotes').value = link ? (link.notes || '') : '';
   document.getElementById('linkModal').classList.add('active');
 }
 
@@ -259,28 +369,31 @@ function saveLink() {
   const url = document.getElementById('linkUrl').value.trim();
   const description = document.getElementById('linkDescription').value.trim();
   const category = document.getElementById('linkCategory').value;
+  const priority = document.getElementById('linkPriority').value;
   const tags = document.getElementById('linkTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const notes = document.getElementById('linkNotes').value.trim();
 
   if (!title || !url) {
-    showToast('Title and URL are required');
+    showToast('Título e URL são obrigatórios');
     return;
   }
 
-  try { new URL(url); } catch { showToast('Invalid URL'); return; }
+  try { new URL(url); } catch { showToast('URL inválida'); return; }
 
   const allLinks = loadData('links') || [];
+  const now = new Date().toISOString();
 
   if (editingLinkId) {
     const idx = allLinks.findIndex(l => l.id === editingLinkId);
     if (idx !== -1) {
-      allLinks[idx] = { ...allLinks[idx], title, url, description, category, tags };
+      allLinks[idx] = { ...allLinks[idx], title, url, description, category, priority, tags, notes, updated_at: now };
     }
   } else {
     allLinks.push({
       id: 'link_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-      title, url, description, category, tags,
-      favorite: false, broken: false,
-      accessCount: 0, createdAt: new Date().toISOString(), lastAccessed: null
+      title, url, description, category, priority, tags, notes,
+      favorite: false, is_favorite: false, broken: false, status: 'active',
+      accessCount: 0, access_count: 0, createdAt: now, created_at: now, lastAccessed: null, last_accessed: null
     });
   }
 
@@ -289,23 +402,17 @@ function saveLink() {
   document.getElementById('linkModal').classList.remove('active');
   editingLinkId = null;
   loadAll();
-  showToast(editingLinkId ? 'Link updated' : 'Link added');
+  showToast(editingLinkId ? 'Link atualizado' : 'Link adicionado');
 }
 
 function showSwipeActions(id) {
   selectedLinkId = id;
-  const el = document.querySelector(`[data-id="${id}"]`);
-  if (el) el.classList.add('swiped');
+  document.getElementById('swipeActions').classList.add('active');
 }
 
 function hideSwipeActions() {
-  document.querySelectorAll('.link-item.swiped').forEach(el => el.classList.remove('swiped'));
+  document.getElementById('swipeActions').classList.remove('active');
   selectedLinkId = null;
-}
-
-function toggleTheme() {
-  document.body.classList.toggle('dark');
-  localStorage.setItem('lv_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
 }
 
 function exportLinks() {
@@ -320,7 +427,7 @@ function exportLinks() {
   a.download = 'linkvault-export-' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('Links exported');
+  showToast('Links exportados');
 }
 
 function importLinks() {
@@ -345,8 +452,8 @@ function importLinks() {
           saveData('categories', merged);
         }
         loadAll();
-        showToast('Links imported successfully');
-      } catch { showToast('Invalid import file'); }
+        showToast('Links importados com sucesso');
+      } catch { showToast('Arquivo de importação inválido'); }
     };
     reader.readAsText(file);
   };
@@ -354,13 +461,13 @@ function importLinks() {
 }
 
 function setPassword() {
-  const pass = document.getElementById('settingsPassword').value.trim();
+  const pass = document.getElementById('newPassword').value.trim();
   if (pass) {
     localStorage.setItem('lv_password', pass);
-    showToast('Password set');
+    showToast('Senha definida');
   } else {
     localStorage.removeItem('lv_password');
-    showToast('Password removed');
+    showToast('Senha removida');
   }
 }
 
@@ -387,12 +494,10 @@ async function syncNow() {
   }
   showToast('Sincronizando...');
   try {
-    // Upload local links to cloud
     const localLinks = loadData('links') || [];
     if (localLinks.length > 0) {
       await supabaseQuery('links', 'POST', localLinks);
     }
-    // Download cloud links
     const cloudLinks = await supabaseQuery('links?select=*&order=created_at.desc');
     if (cloudLinks && cloudLinks.length > 0) {
       saveData('links', cloudLinks);
@@ -412,27 +517,43 @@ function handleUnlock() {
     showApp();
     input.value = '';
   } else {
-    showToast('Wrong password');
+    showToast('Senha incorreta');
     input.value = '';
   }
 }
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
-  toast.textContent = msg;
+  const toastMsg = document.getElementById('toastMsg');
+  toastMsg.textContent = msg;
+  toast.classList.remove('hidden');
   toast.classList.add('active');
-  setTimeout(() => toast.classList.remove('active'), 3000);
+  setTimeout(() => {
+    toast.classList.remove('active');
+    toast.classList.add('hidden');
+  }, 3000);
 }
 
 function esc(str) {
   const div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = str || '';
   return div.innerHTML;
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function closeMenu() {
+  document.getElementById('sideMenu').classList.remove('active');
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  currentPage = 1;
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.view === filter);
+  });
+  loadLinks();
 }
 
 function setupEventListeners() {
@@ -444,106 +565,102 @@ function setupEventListeners() {
 
   // Menu
   document.getElementById('menuBtn').addEventListener('click', () => {
-    document.getElementById('sideMenu').classList.add('active');
-    document.getElementById('menuOverlay').classList.add('active');
+    document.getElementById('sideMenu').classList.remove('hidden');
+    setTimeout(() => document.getElementById('sideMenu').classList.add('active'), 10);
   });
-  document.getElementById('closeMenu').addEventListener('click', closeMenu);
   document.getElementById('closeMenuBtn').addEventListener('click', closeMenu);
-  document.getElementById('menuOverlay').addEventListener('click', closeMenu);
+  document.getElementById('sideMenu').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('sideMenu')) closeMenu();
+  });
 
-  // Menu items
-  document.getElementById('menuAll').addEventListener('click', () => { closeMenu(); filterCategory('all'); });
-  document.getElementById('menuFavorites').addEventListener('click', () => { closeMenu(); setFilter('favorites'); });
-  document.getElementById('menuRecent').addEventListener('click', () => { closeMenu(); setFilter('recent'); });
-  document.getElementById('menuFrequent').addEventListener('click', () => { closeMenu(); setFilter('frequent'); });
-  document.getElementById('menuBroken').addEventListener('click', () => { closeMenu(); setFilter('broken'); });
-  document.getElementById('menuSettings').addEventListener('click', () => {
-    closeMenu();
-    document.getElementById('settingsModal').classList.add('active');
+  // Menu nav items
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+    item.addEventListener('click', () => {
+      closeMenu();
+      const view = item.dataset.view;
+      if (view === 'settings') {
+        document.getElementById('settingsModal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('settingsModal').classList.add('active'), 10);
+      } else {
+        setFilter(view);
+      }
+    });
   });
 
   // Search
   document.getElementById('searchInput').addEventListener('input', (e) => {
     searchQuery = e.target.value;
+    currentPage = 1;
     loadLinks();
   });
 
   // Filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => setFilter(btn.dataset.filter));
-  });
-
-  // Bottom nav
-  document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+  document.querySelectorAll('.filter-pill').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      setFilter(btn.dataset.filter);
     });
   });
 
   // Add link
   document.getElementById('addLinkBtn').addEventListener('click', () => openLinkModal());
-  document.getElementById('addIcon').addEventListener('click', () => openLinkModal());
 
   // Modal
   document.getElementById('saveLinkBtn').addEventListener('click', saveLink);
-  document.getElementById('closeModalBtn').addEventListener('click', () => {
+  document.getElementById('closeLinkModal').addEventListener('click', () => {
     document.getElementById('linkModal').classList.remove('active');
     editingLinkId = null;
   });
 
-  // Theme
-  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-
   // Settings
+  document.getElementById('closeSettingsModal').addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('active');
+  });
   document.getElementById('exportBtn').addEventListener('click', exportLinks);
   document.getElementById('importBtn').addEventListener('click', importLinks);
   document.getElementById('savePassBtn').addEventListener('click', setPassword);
   document.getElementById('saveSupabaseBtn').addEventListener('click', saveSupabaseConfig);
   document.getElementById('syncNowBtn').addEventListener('click', syncNow);
-  
+  document.getElementById('checkLinksBtn').addEventListener('click', () => {
+    showToast('Verificação de links não disponível no mobile');
+  });
+
   // Load saved Supabase config
   document.getElementById('supabaseUrl').value = localStorage.getItem('lv_supabase_url') || '';
   document.getElementById('supabaseKey').value = localStorage.getItem('lv_supabase_key') || '';
-  document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-    document.getElementById('settingsModal').classList.remove('active');
+
+  // Theme toggle
+  document.getElementById('themeToggle').addEventListener('change', (e) => {
+    document.body.classList.toggle('dark', e.target.checked);
+    localStorage.setItem('lv_theme', e.target.checked ? 'dark' : 'light');
   });
 
   // Swipe actions
-  document.querySelectorAll('.swipe-fav-btn').forEach(btn => {
+  document.querySelectorAll('.swipe-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (selectedLinkId) toggleFavorite(selectedLinkId);
-      hideSwipeActions();
-    });
-  });
-  document.querySelectorAll('.swipe-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (selectedLinkId) {
+      const action = btn.dataset.action;
+      if (action === 'favorite' && selectedLinkId) toggleFavorite(selectedLinkId);
+      else if (action === 'edit' && selectedLinkId) {
         const link = links.find(l => l.id === selectedLinkId);
         if (link) openLinkModal(link);
       }
+      else if (action === 'delete' && selectedLinkId) deleteLink(selectedLinkId);
       hideSwipeActions();
-    });
-  });
-  document.querySelectorAll('.swipe-delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (selectedLinkId) deleteLink(selectedLinkId);
     });
   });
 
-  // Touch support for swipe
-  let touchStartX = 0;
-  document.getElementById('linksList').addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-  });
-  document.getElementById('linksList').addEventListener('touchend', (e) => {
-    const diff = e.changedTouches[0].clientX - touchStartX;
-    if (diff < -50) {
-      const item = e.target.closest('.link-item');
-      if (item) showSwipeActions(item.dataset.id);
-    } else if (diff > 50) {
-      hideSwipeActions();
+  // Link card clicks
+  document.getElementById('linksContainer').addEventListener('click', (e) => {
+    const card = e.target.closest('.link-card');
+    if (!card) return;
+    
+    const favBtn = e.target.closest('.link-action-btn.favorite');
+    if (favBtn) {
+      e.stopPropagation();
+      toggleFavorite(favBtn.dataset.id);
+      return;
     }
+    
+    openLink(card.dataset.id);
   });
 
   // Close modals on overlay click
@@ -558,25 +675,4 @@ function setupEventListeners() {
       document.getElementById('settingsModal').classList.remove('active');
     }
   });
-}
-
-function closeMenu() {
-  document.getElementById('sideMenu').classList.remove('active');
-  document.getElementById('menuOverlay').classList.remove('active');
-}
-
-function filterCategory(catId) {
-  currentCategory = catId;
-  document.querySelectorAll('.cat-chip').forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.cat === catId);
-  });
-  loadLinks();
-}
-
-function setFilter(filter) {
-  currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === filter);
-  });
-  loadLinks();
 }
