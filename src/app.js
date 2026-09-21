@@ -27,6 +27,9 @@ const categoryIcons = {
 
 // State
 let links = [];
+let currentPage = 1;
+const linksPerPage = 100;
+let totalLinks = 0;
 let categories = [];
 let currentView = 'all';
 let currentCategory = null;
@@ -170,8 +173,15 @@ async function handleUnlock() {
     }
 }
 
+function goToPage(page) {
+    currentPage = page;
+    renderLinks();
+    document.getElementById('linksContainer').scrollTop = 0;
+}
+
 // Data Loading
 async function loadLinks() {
+    currentPage = 1;
     try {
         let linksData = [];
         
@@ -243,15 +253,47 @@ async function loadStats() {
 function renderLinks() {
     const container = document.getElementById('linksContainer');
     const emptyState = document.getElementById('emptyState');
+    const pagination = document.getElementById('pagination');
 
     if (links.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('hidden');
+        if (pagination) pagination.innerHTML = '';
         return;
     }
 
     emptyState.classList.add('hidden');
-    container.innerHTML = links.map(link => createLinkCard(link)).join('');
+    
+    // Pagination
+    totalLinks = links.length;
+    const totalPages = Math.ceil(totalLinks / linksPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * linksPerPage;
+    const end = start + linksPerPage;
+    const pageLinks = links.slice(start, end);
+    
+    container.innerHTML = pageLinks.map(link => createLinkCard(link)).join('');
+    
+    // Render pagination
+    if (pagination && totalPages > 1) {
+        let paginationHtml = '';
+        if (currentPage > 1) {
+            paginationHtml += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">‹</button>`;
+        }
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        if (currentPage < totalPages) {
+            paginationHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">›</button>`;
+        }
+        paginationHtml += `<span class="page-info">${totalLinks} links</span>`;
+        pagination.innerHTML = paginationHtml;
+        pagination.classList.remove('hidden');
+    } else if (pagination) {
+        pagination.innerHTML = `<span class="page-info">${totalLinks} links</span>`;
+    }
 
     // Add event listeners
     container.querySelectorAll('.link-card').forEach(card => {

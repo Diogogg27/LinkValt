@@ -213,7 +213,7 @@ fn categorize_url(url: &str) -> String {
 fn import_links(json_data: String) -> Result<u32, String> {
     let db = get_db();
     let links: Vec<Link> = serde_json::from_str(&json_data).map_err(|e| e.to_string())?;
-    let mut count = 0;
+    let mut processed = Vec::with_capacity(links.len());
     for mut link in links {
         link.id = uuid::Uuid::new_v4().to_string();
         link.category = categorize_url(&link.url);
@@ -221,17 +221,14 @@ fn import_links(json_data: String) -> Result<u32, String> {
             link.url.replace("https://", "").replace("http://", "").split('/').next().unwrap_or(""));
         link.created_at = chrono::Utc::now().to_rfc3339();
         link.updated_at = link.created_at.clone();
-        if db.insert_link(&link).is_ok() {
-            count += 1;
-        }
+        processed.push(link);
     }
-    Ok(count)
+    db.insert_links_batch(&processed).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn import_html(html_data: String) -> Result<u32, String> {
     let db = get_db();
-    let mut count = 0;
     
     let re_url = regex_lite::Regex::new(r#"(?i)href=["']([^"']+)["']"#).unwrap();
     let re_name = regex_lite::Regex::new(r#"(?i)><A[^>]*>([^<]+)</A>"#).unwrap();
@@ -241,6 +238,7 @@ fn import_html(html_data: String) -> Result<u32, String> {
         .filter(|u| u.starts_with("http"))
         .collect();
     
+    let mut processed = Vec::with_capacity(urls.len());
     for url in urls {
         let title = re_name.captures_iter(&html_data)
             .find(|c| {
@@ -259,12 +257,11 @@ fn import_html(html_data: String) -> Result<u32, String> {
         let mut link = Link::new(title, url.clone(), category);
         link.favicon = format!("https://www.google.com/s2/favicons?domain={}&sz=32", 
             url.replace("https://", "").replace("http://", "").split('/').next().unwrap_or(""));
-        
-        if db.insert_link(&link).is_ok() {
-            count += 1;
-        }
+        link.created_at = chrono::Utc::now().to_rfc3339();
+        link.updated_at = link.created_at.clone();
+        processed.push(link);
     }
-    Ok(count)
+    db.insert_links_batch(&processed).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

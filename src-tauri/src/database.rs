@@ -204,6 +204,30 @@ impl Database {
         Ok(())
     }
 
+    pub fn insert_links_batch(&self, links: &[Link]) -> Result<u32> {
+        let conn = self.conn.lock().unwrap();
+        let mut count = 0;
+        let tx = conn.unchecked_transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO links (id, title, url, description, favicon, category, tags, status, priority, notes, is_favorite, is_archived, access_count, last_accessed, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"
+            )?;
+            for link in links {
+                let tags_json = serde_json::to_string(&link.tags).unwrap_or_default();
+                stmt.execute(params![
+                    link.id, link.title, link.url, link.description, link.favicon,
+                    link.category, tags_json, link.status, link.priority, link.notes,
+                    link.is_favorite as i32, link.is_archived as i32, link.access_count,
+                    link.last_accessed, link.created_at, link.updated_at
+                ])?;
+                count += 1;
+            }
+        }
+        tx.commit()?;
+        Ok(count)
+    }
+
     pub fn update_link(&self, link: &Link) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         let tags_json = serde_json::to_string(&link.tags).unwrap_or_default();
