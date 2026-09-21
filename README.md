@@ -299,26 +299,9 @@ npm run build
 
 Se este projeto te ajudou, considere apoiar o desenvolvimento:
 
-### Opções de Doação
+### PIX
 
-| Plataforma | Link |
-|------------|------|
-| ☕ **Buy Me a Coffee** | [buymeacoffee.com/Diogogg27](https://buymeacoffee.com/Diogogg27) |
-| 💰 **GitHub Sponsors** | [github.com/sponsors/Diogogg27](https://github.com/sponsors/Diogogg27) |
-| 🏦 **PIX** | `04301346147` |
-| 📱 **PayPal** | [paypal.me/Diogogg27](https://paypal.me/Diogogg27) |
-
-### Contribuição Recorrente
-
-Se prefere apoiar mensalmente:
-
-- **GitHub Sponsors** — Assine e receba atualizações exclusivas
-- **Patreon** — Acesso a conteúdo bonus e suporte prioritário
-
-### Doação Única
-
-- **PIX** — Escaneie o QR Code ou use a chave acima
-- **Buy Me a Coffee** — Doação rápida sem necessidade de conta
+`04301346147`
 
 > Toda doação é Voluntária e ajuda a manter o projeto ativo e atualizado.
 
