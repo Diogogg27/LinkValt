@@ -8,8 +8,11 @@
     "dev": "tauri dev"
   },
   "dependencies": {
+    "@hyperbrowser/sdk": "^0.92.6",
+    "dotenv": "^18.0.1",
     "lucide": "^1.47.0",
-    "morphicons": "^1.7.1"
+    "morphicons": "^1.7.1",
+    "playwright-core": "^1.63.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
