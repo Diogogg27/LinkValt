@@ -47,8 +47,10 @@ function initApp() {
 }
 
 function showLockScreen() {
+  document.getElementById('lockScreen').classList.remove('hidden');
   document.getElementById('lockScreen').classList.add('active');
-  document.getElementById('app').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  document.getElementById('mainApp').classList.add('hidden');
 }
 
 function showApp() {
