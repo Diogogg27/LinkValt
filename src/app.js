@@ -299,7 +299,9 @@ function renderLinks() {
     container.querySelectorAll('.link-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (!e.target.closest('.link-action-btn')) {
-                openLink(link);
+                const linkId = card.dataset.id;
+                const link = links.find(l => l.id === linkId);
+                if (link) openLink(link);
             }
         });
     });
