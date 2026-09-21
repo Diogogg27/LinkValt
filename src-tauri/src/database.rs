@@ -227,6 +227,12 @@ impl Database {
         Ok(())
     }
 
+    pub fn delete_all_links(&self) -> Result<u32> {
+        let conn = self.conn.lock().unwrap();
+        let count = conn.execute("DELETE FROM links", params![])? as u32;
+        Ok(count)
+    }
+
     pub fn toggle_favorite(&self, id: &str) -> Result<bool> {
         let conn = self.conn.lock().unwrap();
         let current: i32 = conn.query_row(

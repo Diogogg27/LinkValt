@@ -114,6 +114,7 @@ function setupEventListeners() {
     document.getElementById('importBtn').addEventListener('click', () => openModal('importModal'));
     document.getElementById('closeImportModal').addEventListener('click', () => closeModal('importModal'));
     document.getElementById('checkLinksBtn').addEventListener('click', handleCheckLinks);
+    document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAll);
 
     // Import
     document.getElementById('importJsonBtn').addEventListener('click', () => triggerImport('json'));
@@ -411,7 +412,7 @@ function sortLinks(links, sortBy) {
 async function openLink(link) {
     try {
         await invoke('open_link', { id: link.id });
-        window.open(link.url, '_blank');
+        await window.__TAURI__.shell.open(link.url);
     } catch (e) {
         console.error('Open link error:', e);
     }
@@ -618,6 +619,19 @@ async function handleCheckLinks() {
     } catch (e) {
         console.error('Check links error:', e);
         showToast('Erro ao verificar links');
+    }
+}
+
+async function handleDeleteAll() {
+    if (!confirm('Tem certeza que deseja excluir TODOS os links? Esta ação não pode ser desfeita.')) return;
+    try {
+        const count = await invoke('delete_all_links');
+        showToast(`${count} links excluídos`);
+        await loadLinks();
+        await loadStats();
+    } catch (e) {
+        console.error('Delete all error:', e);
+        showToast('Erro ao excluir links');
     }
 }
 

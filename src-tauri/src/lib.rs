@@ -100,6 +100,12 @@ fn delete_link(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn delete_all_links() -> Result<u32, String> {
+    let db = get_db();
+    db.delete_all_links().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn toggle_favorite(id: String) -> Result<bool, String> {
     let db = get_db();
     db.toggle_favorite(&id).map_err(|e| e.to_string())
@@ -172,6 +178,37 @@ fn export_links() -> Result<String, String> {
     serde_json::to_string_pretty(&links).map_err(|e| e.to_string())
 }
 
+fn categorize_url(url: &str) -> String {
+    let url_lower = url.to_lowercase();
+    
+    if url_lower.contains("github.com") || url_lower.contains("gitlab.com") || url_lower.contains("stackoverflow.com") || url_lower.contains("developer.") || url_lower.contains("docs.") || url_lower.contains("documentation") || url_lower.contains("/api/") || url_lower.contains("npmjs.com") || url_lower.contains("crates.io") {
+        return "Desenvolvimento".to_string();
+    }
+    if url_lower.contains("figma.com") || url_lower.contains("dribbble.com") || url_lower.contains("behance.net") || url_lower.contains("adobe.com") || url_lower.contains("canva.com") || url_lower.contains("/design") || url_lower.contains("fonts.google.com") {
+        return "Design".to_string();
+    }
+    if url_lower.contains("youtube.com") || url_lower.contains("netflix.com") || url_lower.contains("twitch.tv") || url_lower.contains("spotify.com") || url_lower.contains("music.") || url_lower.contains("/video") || url_lower.contains("/watch") {
+        return "Entretenimento".to_string();
+    }
+    if url_lower.contains("twitter.com") || url_lower.contains("x.com") || url_lower.contains("instagram.com") || url_lower.contains("facebook.com") || url_lower.contains("linkedin.com") || url_lower.contains("reddit.com") || url_lower.contains("discord.com") || url_lower.contains("t.me") || url_lower.contains("telegram") {
+        return "Social".to_string();
+    }
+    if url_lower.contains("news") || url_lower.contains("noticias") || url_lower.contains("blog") || url_lower.contains("medium.com") || url_lower.contains("dev.to") || url_lower.contains("hackernews") || url_lower.contains("techcrunch") || url_lower.contains("theverge") {
+        return "Notícias".to_string();
+    }
+    if url_lower.contains("udemy.com") || url_lower.contains("coursera.org") || url_lower.contains("edx.org") || url_lower.contains("khan academy") || url_lower.contains("/learn") || url_lower.contains("/tutorial") || url_lower.contains("/course") || url_lower.contains("alura.com.br") || url_lower.contains("rocketseat") {
+        return "Aprendizado".to_string();
+    }
+    if url_lower.contains("amazon.") || url_lower.contains("mercadolivre") || url_lower.contains("shopee") || url_lower.contains("aliexpress") || url_lower.contains("ebay") || url_lower.contains("/shop") || url_lower.contains("/store") || url_lower.contains("/product") {
+        return "Compras".to_string();
+    }
+    if url_lower.contains("tool") || url_lower.contains("converter") || url_lower.contains("calculator") || url_lower.contains("regex101") || url_lower.contains("json") || url_lower.contains("jwt.io") || url_lower.contains("tinypng") || url_lower.contains("unscreen") {
+        return "Ferramentas".to_string();
+    }
+    
+    "Referências".to_string()
+}
+
 #[tauri::command]
 fn import_links(json_data: String) -> Result<u32, String> {
     let db = get_db();
@@ -179,6 +216,9 @@ fn import_links(json_data: String) -> Result<u32, String> {
     let mut count = 0;
     for mut link in links {
         link.id = uuid::Uuid::new_v4().to_string();
+        link.category = categorize_url(&link.url);
+        link.favicon = format!("https://www.google.com/s2/favicons?domain={}&sz=32", 
+            link.url.replace("https://", "").replace("http://", "").split('/').next().unwrap_or(""));
         link.created_at = chrono::Utc::now().to_rfc3339();
         link.updated_at = link.created_at.clone();
         if db.insert_link(&link).is_ok() {
@@ -215,7 +255,8 @@ fn import_html(html_data: String) -> Result<u32, String> {
                 url.replace("https://", "").replace("http://", "").split('/').next().unwrap_or("Link").to_string()
             });
         
-        let mut link = Link::new(title, url.clone(), "Importados".to_string());
+        let category = categorize_url(&url);
+        let mut link = Link::new(title, url.clone(), category);
         link.favicon = format!("https://www.google.com/s2/favicons?domain={}&sz=32", 
             url.replace("https://", "").replace("http://", "").split('/').next().unwrap_or(""));
         
@@ -290,6 +331,7 @@ pub fn run() {
             add_link,
             update_link,
             delete_link,
+            delete_all_links,
             toggle_favorite,
             archive_link,
             open_link,
