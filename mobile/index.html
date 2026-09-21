@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>LinkValt</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Lock Screen -->
+        <div id="lockScreen" class="lock-screen">
+            <div class="lock-card">
+                <div class="lock-icon">🔒</div>
+                <h1>LinkValt</h1>
+                <p>Insira sua senha</p>
+                <input type="password" id="lockPassword" placeholder="Senha" autocomplete="off">
+                <button id="unlockBtn" class="btn-primary">Desbloquear</button>
+                <p id="lockError" class="error-text hidden">Senha incorreta</p>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="mainApp" class="app-container hidden">
+            <!-- Header -->
+            <header class="header">
+                <button class="btn-icon" id="menuBtn">☰</button>
+                <h1 class="logo">🔗 LinkVault</h1>
+                <button class="btn-icon" id="addLinkBtn">+</button>
+            </header>
+
+            <!-- Search -->
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Buscar links...">
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-pill"><span id="statTotal">0</span> Total</div>
+                <div class="stat-pill fav"><span id="statFav">0</span> ⭐</div>
+                <div class="stat-pill warn"><span id="statBroken">0</span> ⚠️</div>
+            </div>
+
+            <!-- Quick Filters -->
+            <div class="filter-row">
+                <button class="filter-btn active" data-filter="all">Todos</button>
+                <button class="filter-btn" data-filter="favorites">⭐ Favoritos</button>
+                <button class="filter-btn" data-filter="recent">🕐 Recentes</button>
+                <button class="filter-btn" data-filter="broken">⚠️ Problemas</button>
+            </div>
+
+            <!-- Categories -->
+            <div class="categories-scroll" id="categoriesScroll"></div>
+
+            <!-- Links List -->
+            <div class="links-list" id="linksList"></div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">🔗</div>
+                <h2>Nenhum link encontrado</h2>
+                <p>Toque em + para adicionar</p>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-btn active" data-view="all">
+                <span class="nav-icon">📋</span>
+                <span>Todos</span>
+            </button>
+            <button class="nav-btn" data-view="favorites">
+                <span class="nav-icon">⭐</span>
+                <span>Favoritos</span>
+            </button>
+            <button class="nav-btn" data-view="add">
+                <span class="nav-icon add-icon">+</span>
+            </button>
+            <button class="nav-btn" data-view="categories">
+                <span class="nav-icon">📁</span>
+                <span>Categorias</span>
+            </button>
+            <button class="nav-btn" data-view="settings">
+                <span class="nav-icon">⚙️</span>
+                <span>Config</span>
+            </button>
+        </nav>
+
+        <!-- Side Menu -->
+        <div class="side-menu hidden" id="sideMenu">
+            <div class="side-menu-backdrop" id="closeMenu"></div>
+            <div class="side-menu-content">
+                <div class="menu-header">
+                    <h2>🔗 LinkVault</h2>
+                    <button class="btn-icon" id="closeMenuBtn">×</button>
+                </div>
+                <div class="menu-items">
+                    <button class="menu-item" data-action="all">
+                        <span>📋</span> Todos os Links
+                    </button>
+                    <button class="menu-item" data-action="favorites">
+                        <span>⭐</span> Favoritos
+                    </button>
+                    <button class="menu-item" data-action="recent">
+                        <span>🕐</span> Recentes
+                    </button>
+                    <button class="menu-item" data-action="frequent">
+                        <span>📊</span> Mais Acessados
+                    </button>
+                    <button class="menu-item" data-action="broken">
+                        <span>⚠️</span> Com Problemas
+                    </button>
+                    <hr>
+                    <button class="menu-item" data-action="settings">
+                        <span>⚙️</span> Configurações
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Modal -->
+        <div class="modal hidden" id="linkModal">
+            <div class="modal-header">
+                <button class="btn-icon" id="closeModalBtn">×</button>
+                <h2 id="modalTitle">Novo Link</h2>
+                <button class="btn-primary btn-save" id="saveLinkBtn">Salvar</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="linkId">
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="linkTitle" placeholder="Nome do link">
+                </div>
+                <div class="form-group">
+                    <label>URL *</label>
+                    <input type="url" id="linkUrl" placeholder="https://exemplo.com">
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="linkDesc" rows="2" placeholder="Breve descrição"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="linkCategory"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <select id="linkPriority">
+                            <option value="low">🟢 Baixa</option>
+                            <option value="medium" selected>🟡 Média</option>
+                            <option value="high">🔴 Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tags (separadas por vírgula)</label>
+                    <input type="text" id="linkTags" placeholder="tag1, tag2">
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea id="linkNotes" rows="2" placeholder="Notas..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal hidden" id="settingsModal">
+            <div class="modal-header">
+                <button class="btn-icon" id="closeSettingsBtn">×</button>
+                <h2>Configurações</h2>
+                <div></div>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Aparência</h3>
+                    <div class="setting-row">
+                        <span>Tema Escuro</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="themeToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Dados</h3>
+                    <button class="btn-secondary full-width" id="exportBtn">📥 Exportar Links</button>
+                    <button class="btn-secondary full-width" id="importBtn">📤 Importar Links</button>
+                    <button class="btn-secondary full-width" id="checkLinksBtn">🔍 Verificar Links</button>
+                </div>
+                <div class="settings-section">
+                    <h3>Segurança</h3>
+                    <div class="form-group">
+                        <label>Definir Senha</label>
+                        <div class="form-row">
+                            <input type="password" id="newPassword" placeholder="Nova senha">
+                            <button class="btn-primary" id="savePassBtn">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Sobre</h3>
+                    <p class="about-text">LinkVault v1.0.0<br>Repositório pessoal de links</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast hidden" id="toast">
+            <span id="toastMsg"></span>
+        </div>
+
+        <!-- Swipe Action -->
+        <div class="swipe-actions hidden" id="swipeActions">
+            <button class="swipe-btn fav" data-action="favorite">⭐</button>
+            <button class="swipe-btn edit" data-action="edit">✏️</button>
+            <button class="swipe-btn delete" data-action="delete">🗑️</button>
+        </div>
+    </div>
+
+    <script src="mobile.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "linkvalt",
+  "version": "1.0.0",
+  "description": "Personal link repository with minimalist design",
+  "scripts": {
+    "tauri": "tauri",
+    "build": "tauri build",
+    "dev": "tauri dev"
+  },
+  "dependencies": {
+    "lucide": "^1.47.0",
+    "morphicons": "^1.7.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
