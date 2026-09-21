@@ -23,12 +23,19 @@ fn get_links(
     include_archived: Option<bool>,
 ) -> Result<Vec<Link>, String> {
     let db = get_db();
+    let cat = category.as_deref();
+    let fav = favorites_only.unwrap_or(false);
+    let inc = include_archived.unwrap_or(false);
+    
     if let Some(query) = search {
-        let cat = category.as_deref();
-        let fav = favorites_only.unwrap_or(false);
         db.search_links(&query, cat, fav).map_err(|e| e.to_string())
+    } else if fav {
+        db.get_all_links(inc).map_err(|e| e.to_string())
+            .map(|links| links.into_iter().filter(|l| l.is_favorite).collect())
+    } else if let Some(c) = cat {
+        db.get_all_links(inc).map_err(|e| e.to_string())
+            .map(|links| links.into_iter().filter(|l| l.category == c).collect())
     } else {
-        let inc = include_archived.unwrap_or(false);
         db.get_all_links(inc).map_err(|e| e.to_string())
     }
 }

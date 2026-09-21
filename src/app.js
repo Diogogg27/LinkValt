@@ -181,6 +181,9 @@ function goToPage(page) {
     document.getElementById('linksContainer').scrollTop = 0;
 }
 
+// Make goToPage globally accessible
+window.goToPage = goToPage;
+
 // Data Loading
 async function loadLinks() {
     currentPage = 1;
