@@ -53,6 +53,7 @@ function showLockScreen() {
 
 function showApp() {
   document.getElementById('lockScreen').classList.remove('active');
+  document.getElementById('mainApp').classList.remove('hidden');
   document.getElementById('app').style.display = '';
   loadAll();
 }
@@ -405,7 +406,7 @@ async function syncNow() {
 function handleUnlock() {
   const input = document.getElementById('lockPassword');
   const stored = localStorage.getItem('lv_password');
-  if (input.value === stored) {
+  if (!stored || input.value === stored) {
     showApp();
     input.value = '';
   } else {
